@@ -33,7 +33,6 @@ function App() {
   const [settings,setSettings] = useState(false);
   const [draft,setDraft] = useState('');
   const [error,setError] = useState('');
-  const [frameVersion,setFrameVersion] = useState(0);
   const current = visibleModes.find(m=>m.id===selected)||{id:'',label:'보관함',defaultUrl:''};
   const activeUrl = selected && sanitizeUrl(Object.prototype.hasOwnProperty.call(links,selected)?String(links[selected]||''):current.defaultUrl);
   useEffect(()=>{
@@ -57,12 +56,12 @@ function App() {
     if (draft.trim() && !url) {setError('https://로 시작하는 올바른 주소를 입력해 줘.');return;}
     const next={...links,[selected]:url};
     try {localStorage.setItem(STORAGE_KEY,JSON.stringify(next));} catch {setError('브라우저 저장 공간을 확인해 줘.');return;}
-    setLinks(next);setFrameVersion(n=>n+1);setSettings(false);setError('');
+    setLinks(next);setSettings(false);setError('');
   }
   function resetUrl() {
     const next={...links};delete next[selected];
     try {localStorage.setItem(STORAGE_KEY,JSON.stringify(next));} catch {}
-    setLinks(next);setDraft(current.defaultUrl);setFrameVersion(n=>n+1);setSettings(false);
+    setLinks(next);setDraft(current.defaultUrl);setSettings(false);
   }
   return <div className="hub">
     <header className="topbar">
@@ -72,7 +71,7 @@ function App() {
       </div>
       <div className="top-actions">
         <label className="mode-select"><span className="sr-only">앱 선택</span>
-          <select value={selected} onChange={e=>{if(e.target.value==='__archive__'){setSettings(false);setArchiveOpen(true)}else setSelected(e.target.value)}} aria-label="앱 전환">
+          <select value={selected} onChange={e=>{if(e.target.value==='__archive__'){setSettings(false);setArchiveOpen(true)}else {const id=e.target.value;setSelected(id);const mode=visibleModes.find(m=>m.id===id);const url=sanitizeUrl(Object.prototype.hasOwnProperty.call(links,id)?String(links[id]||''):mode?.defaultUrl||'');if(url)window.location.assign(url);}}} aria-label="앱 전환">
             {!selected&&<option value="" disabled>사용 중인 프로젝트 없음</option>}
             {visibleModes.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}
             <option value="__archive__">보관함 · {archived.length}개</option>
@@ -95,20 +94,20 @@ function App() {
     <div className="info-strip">
       <span className="app-name"><ShieldCheck size={14}/> {current.label} <i>독립 로그인 · DB 유지</i></span>
       <div className="strip-actions">
-        {activeUrl&&<button type="button" onClick={()=>setFrameVersion(n=>n+1)} aria-label="앱 새로고침" title="앱 새로고침"><RefreshCw size={15}/></button>}
-        {activeUrl&&<a href={activeUrl} target="_blank" rel="noopener noreferrer" title="원본 앱 열기"><ExternalLink size={15}/><span>원본 열기</span></a>}
+        
+        {activeUrl&&<a href={activeUrl} title="앱 열기"><ExternalLink size={15}/><span>앱 열기</span></a>}
       </div>
     </div>
     <main className="frame-area">
-      {!selected ? <div className="empty"><h2>모든 프로젝트를 보관했어</h2><p>보관함에서 언제든 다시 꺼낼 수 있어.</p><button className="primary" type="button" onClick={()=>setArchiveOpen(true)}>보관함 · {archived.length}개</button></div> : activeUrl ? <iframe key={selected+'-'+frameVersion+'-'+activeUrl} title={current.label+' 앱'} src={activeUrl} allow="microphone; camera; clipboard-write" referrerPolicy="strict-origin-when-cross-origin"/>:
+      {!selected ? <div className="empty"><h2>모든 프로젝트를 보관했어</h2><p>보관함에서 언제든 다시 꺼낼 수 있어.</p><button className="primary" type="button" onClick={()=>setArchiveOpen(true)}>보관함 · {archived.length}개</button></div> : activeUrl ? <div className="empty"><div className="empty-icon"><ExternalLink size={25}/></div><h2>{current.label}</h2><p>로그인을 안정적으로 유지할 수 있도록 앱을 독립된 페이지로 열어 줘. 브라우저 뒤로 가기로 허브에 돌아올 수 있어.</p><a className="primary" href={activeUrl} style={{display:'inline-flex',alignItems:'center',gap:8,textDecoration:'none'}}><ExternalLink size={16}/> {current.label} 열기</a></div>:
         <div className="empty">
           <div className="empty-icon"><Link2 size={25}/></div>
           <h2>{current.label} 연결 준비</h2>
-          <p>이 앱의 실제 배포 주소가 아직 등록되지 않았어. 우상단 설정에서 원본 앱 URL을 한 번 등록하면 이 화면에 표시돼.</p>
+          <p>이 앱의 실제 배포 주소가 아직 등록되지 않았어. 우상단 설정에서 원본 앱 URL을 한 번 등록하면 연결할 수 있어.</p>
           <button className="primary" type="button" onClick={()=>{setSettings(true);setDraft('')}}><Settings2 size={16}/> URL 등록하기</button>
         </div>}
     </main>
-    <footer className="foot"><MonitorSmartphone size={12}/><span>앱 화면이 표시되지 않으면 ‘원본 열기’를 사용해 줘. 일부 앱은 외부 삽입이 제한될 수 있어.</span></footer>
+    <footer className="foot"><MonitorSmartphone size={12}/><span>로그인 유지와 데이터 보호를 위해 각 앱을 독립 페이지에서 실행해. 뒤로 가기로 허브에 돌아올 수 있어.</span></footer>
   </div>;
 }
 createRoot(document.getElementById('root')).render(<React.StrictMode><App/></React.StrictMode>);

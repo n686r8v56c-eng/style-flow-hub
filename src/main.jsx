@@ -27,8 +27,8 @@ function App() {
   const [archived,setArchived] = useState(()=>readArchived(ARCHIVE_KEY, MODES));
   const [archiveOpen,setArchiveOpen] = useState(false);
   const visibleModes = MODES.filter(mode=>!archived.includes(mode.id));
-  const initial = new URLSearchParams(window.location.search).get('app');
-  const [selected,setSelected] = useState(()=>visibleModes.some(m=>m.id===initial)?initial:(visibleModes[0]?.id||''));
+  // Each new visit begins with the first visible app, regardless of an old ?app= URL.
+  const [selected,setSelected] = useState(()=>visibleModes[0]?.id||'');
   const [links,setLinks] = useState(readSaved);
   const [settings,setSettings] = useState(false);
   const [draft,setDraft] = useState('');
@@ -36,10 +36,13 @@ function App() {
   const current = visibleModes.find(m=>m.id===selected)||{id:'',label:'보관함',defaultUrl:''};
   const activeUrl = selected && sanitizeUrl(Object.prototype.hasOwnProperty.call(links,selected)?String(links[selected]||''):current.defaultUrl);
   useEffect(()=>{
+    // Do not save app selection in the address; a return visit starts at the top.
     const params = new URLSearchParams(window.location.search);
-    if(selected)params.set('app',selected);else params.delete('app');
-    window.history.replaceState(null,'',window.location.pathname+'?'+params.toString()+window.location.hash);
-  },[selected]);
+    if(!params.has('app'))return;
+    params.delete('app');
+    const qs=params.toString();
+    window.history.replaceState(null,'',window.location.pathname+(qs?'?'+qs:'')+window.location.hash);
+  },[]);
   useEffect(()=>{setDraft(activeUrl);setError('');setSettings(false)},[selected]);
   function toggleArchived(id) {
     const next=archived.includes(id)?archived.filter(value=>value!==id):[...archived,id];
